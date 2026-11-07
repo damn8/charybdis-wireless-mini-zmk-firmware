@@ -1,33 +1,37 @@
 /*
  * PAW3395 trackball sensor for the right half (replaces charybdis_pmw3610.dtsi).
  *
- * PAW3395 uses 4-wire SPI, so MOSI and MISO need separate pins
- * (PMW3610 shared one SDIO line on P0.17).
+ * PAW3395 uses 4-wire SPI. Pins follow the labels on the controller shield's
+ * "SPI" header (olidacombe nice!nano holder), so every shield pad goes to the
+ * sensor pad with the same name; only MOTION needs one extra wire.
  *
- *   Signal   nRF52840  SuperMini / nice!nano pin   Wire
- *   SCLK     P0.08     D0 (RX)    (pro_micro 0)    existing FFC wire "SCLK"
- *   MOTION   P0.06     D1 (TX)    (pro_micro 1)    existing FFC wire "MOTION"
- *   MISO     P0.17     D2         (pro_micro 2)    existing FFC wire "SDIO"
- *   nCS      P0.20     D3         (pro_micro 3)    existing FFC wire "NCS"
- *   MOSI     P1.11     D14 "1.11" (pro_micro 14)   NEW 7th wire
- *   VIN      3.3V VCC                              existing FFC wire "VCC"
- *   GND      GND                                   existing FFC wire "GND"
+ *   Signal   nRF52840  SuperMini pin       Shield SPI pad   Sensor board pad
+ *   VCC      VCC 3.3V  VCC                 VCC              VIN
+ *   CS       P0.20     D3                  CS               CS
+ *   MOSI     P0.17     D2                  MOSI             MOSI
+ *   SCLK     P0.08     D0 (RX)             SCLK             SCLK
+ *   MISO     P0.06     D1 (TX)             MISO             MISO
+ *   GND      GND       GND                 GND              GND
+ *   MOTION   P1.11     "1.11" (D14)        - (extra wire)   MOT
+ *
+ * Note: with the old PMW3610 the "MOSI" pad carried SDIO and the "MISO" pad
+ * carried MOTION; that is why the stock pmw3610 dtsi used P0.17 and P0.06.
  */
 
 &pinctrl {
     spi0_default: spi0_default {
         group1 {
             psels = <NRF_PSEL(SPIM_SCK, 0, 8)>,
-                <NRF_PSEL(SPIM_MOSI, 1, 11)>,
-                <NRF_PSEL(SPIM_MISO, 0, 17)>;
+                <NRF_PSEL(SPIM_MOSI, 0, 17)>,
+                <NRF_PSEL(SPIM_MISO, 0, 6)>;
         };
     };
 
     spi0_sleep: spi0_sleep {
         group1 {
             psels = <NRF_PSEL(SPIM_SCK, 0, 8)>,
-                <NRF_PSEL(SPIM_MOSI, 1, 11)>,
-                <NRF_PSEL(SPIM_MISO, 0, 17)>;
+                <NRF_PSEL(SPIM_MOSI, 0, 17)>,
+                <NRF_PSEL(SPIM_MISO, 0, 6)>;
             low-power-enable;
         };
     };
@@ -49,7 +53,7 @@
         reg = <0>;
         /* ~10 cm FFC: 2 MHz is conservative; driver example uses 4 MHz */
         spi-max-frequency = <2000000>;
-        irq-gpios = <&gpio0 6 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
+        irq-gpios = <&gpio1 11 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
         cpi = <800>; /* 50..26000, step 50 */
         evt-type = <INPUT_EV_REL>;
         x-input-code = <INPUT_REL_X>;
